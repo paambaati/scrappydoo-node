@@ -11,9 +11,10 @@
  */
 
 const koaRouter = require('koa-router');
+const cheerio = require('cheerio');
+const request = require('request-promise');
 const logger = require('../lib/logging').logger;
 const config = require('../config/config');
-
 
 /**
  * Common variables.
@@ -30,17 +31,43 @@ const router = new koaRouter({
 });
 
 /**
- * Crawler API
+ * Crawler POST API
+ * @param JSON in format -
+ * {
+ *   url: '<url>',
+ *   selector: '<selector>'
+ * }
+ * @return JSON in format -
+ * {
+ *   title: '<element title>',
+ *   image: '<image uri>'
+ * }
  */
 
-router.get('/data', function* getMainProductData() {
+router.post('/data', function* getMainProductData() {
 	let ctx = this;
+	const requestBody = ctx.request.body;
 	logger.debug({
 		'module': moduleName,
 		'url': ctx.request.url,
-		'requestId': ctx.response
+		'requestId': ctx.response,
+		'requestBody': requestBody
 	}, 'New crawl request.');
-	ctx.body = 'Yabba dabba doo!';
+	let requestOptions = {
+		uri: requestBody.url,
+		transform: (body) => {
+			return cheerio.load(body);
+		}
+	}
+	yield request(requestOptions).then(($) => {
+		const matches = $(requestBody.selector);
+		if (matches && matches.length) {
+			return ctx.body = matches[0].attribs;
+		} else {
+			ctx.status = 400;
+			throw new Error('Bad Request');
+		}
+	});
 });
 
 /**
