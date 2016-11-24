@@ -3,7 +3,7 @@
  *
  * @description Crawler Routes.
  * @author GP
- * @version 0.0.1
+ * @version 0.0.2
  */
 
 /**
@@ -12,6 +12,7 @@
 
 const koaRouter = require('koa-router');
 const cheerio = require('cheerio');
+const find = require('cheerio-eq');
 const request = require('request-promise');
 const logger = require('../lib/logging').logger;
 const config = require('../config/config');
@@ -32,15 +33,23 @@ const router = new koaRouter({
 
 /**
  * Crawler POST API
+ *
  * @param JSON in format -
  * {
- *   url: '<url>',
- *   selector: '<selector>'
+ *   "url": "<url>",
+ *   "data": [
+ *     {
+ *       "name": "<unique_name_1>",
+ *       "selector": "<selector>",
+ *       "attribute": "<html_attribute>"
+ *     },
+ *     { ... }
+ *   ]
  * }
  * @return JSON in format -
  * {
- *   title: '<element title>',
- *   image: '<image uri>'
+ *   "<unique_name_1>": "<attribute_value_of_selected_element>",
+ *   ...
  * }
  */
 
@@ -60,13 +69,16 @@ router.post('/data', function* getMainProductData() {
 		}
 	}
 	yield request(requestOptions).then(($) => {
-		const matches = $(requestBody.selector);
-		if (matches && matches.length) {
-			return ctx.body = matches[0].attribs;
-		} else {
-			ctx.status = 400;
-			throw new Error('Bad Request');
+		let returnData = {};
+		for (crawlItem of requestBody.data) {
+			const matches = find($, crawlItem.selector);
+			if (matches && matches.length) {
+				returnData[crawlItem.name] = matches.attr(crawlItem.attribute);
+			} else {
+				returnData[crawlItem.name] = null;
+			}
 		}
+		return ctx.body = returnData;
 	});
 });
 
