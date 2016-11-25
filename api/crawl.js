@@ -3,7 +3,7 @@
  *
  * @description Crawler Routes.
  * @author GP
- * @version 0.0.2
+ * @version 0.0.3
  */
 
 /**
@@ -11,10 +11,8 @@
  */
 
 const koaRouter = require('koa-router');
-const cheerio = require('cheerio');
-const find = require('cheerio-eq');
-const request = require('request-promise');
 const logger = require('../lib/logging').logger;
+const crawler = require('../lib/crawl');
 const config = require('../config/config');
 
 /**
@@ -33,24 +31,6 @@ const router = new koaRouter({
 
 /**
  * Crawler POST API
- *
- * @param JSON in format -
- * {
- *   "url": "<url>",
- *   "data": [
- *     {
- *       "name": "<unique_name_1>",
- *       "selector": "<selector>",
- *       "attribute": "<html_attribute>"
- *     },
- *     { ... }
- *   ]
- * }
- * @return JSON in format -
- * {
- *   "<unique_name_1>": "<attribute_value_of_selected_element>",
- *   ...
- * }
  */
 
 router.post('/data', function* getMainProductData() {
@@ -62,23 +42,8 @@ router.post('/data', function* getMainProductData() {
 		'requestId': ctx.response,
 		'requestBody': requestBody
 	}, 'New crawl request.');
-	let requestOptions = {
-		uri: requestBody.url,
-		transform: (body) => {
-			return cheerio.load(body);
-		}
-	}
-	yield request(requestOptions).then(($) => {
-		let returnData = {};
-		for (crawlItem of requestBody.data) {
-			const matches = find($, crawlItem.selector);
-			if (matches && matches.length) {
-				returnData[crawlItem.name] = matches.attr(crawlItem.attribute);
-			} else {
-				returnData[crawlItem.name] = null;
-			}
-		}
-		return ctx.body = returnData;
+	yield crawler.crawl(requestBody.url, requestBody.data).then((response) => {
+		return ctx.body = response;
 	});
 });
 

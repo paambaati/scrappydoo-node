@@ -1,0 +1,21 @@
+{
+    "INPUT": {
+        "url": "https://www.reddit.com/",
+        "data": [
+            {
+                "attribute": "href",
+                "name": "a_logo_img",
+                "selector": "#header-img"
+            },
+            {
+                "attribute": "href",
+                "name": "a_donate",
+                "selector": "html>body>div:eq(2)>div:eq(7)>div>div>a"
+            }
+        ]
+    },
+    "OUTPUT": {
+        "a_logo_img": "/",
+        "a_donate": "/gold?goldtype=code&source=progressbar"
+    }
+}

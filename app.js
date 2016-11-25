@@ -92,3 +92,6 @@ logger.info({
 	port: config.SERVER.port,
 	environment: env || 'NOT_SET'
 }, 'Server\'s up mate!');
+
+// Module exports.
+module.exports = server;
