@@ -36,7 +36,10 @@
     "koa-router": "5.4.0",
     "lodash": "4.17.2",
     "request": "2.79.0",
-    "request-promise": "4.1.1"
+    "request-promise": "4.1.1",
+    "supertest": "^2.0.1",
+    "tape": "^4.6.3",
+    "testdouble": "^1.9.0"
   },
   "devDependencies": {
     "esformatter": "*"
