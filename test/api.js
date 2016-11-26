@@ -16,24 +16,43 @@ const fs = require('fs');
 const test = require('tape');
 const request = require('supertest');
 const td = require('testdouble');
-
+const libCrawl = require('../lib/crawl');
 /**
  * Common variables.
  */
 
 let app = require('../app.js');
+const useStubs = true;
 
 /**
  * Helper functions.
+ */
+
+/**
+ * Read file synchronously.
+ * @param String - file name.
+ * @returns String - file content.
  */
 
 const readFile = function readFile(fileName) {
     return fs.readFileSync(fileName).toString();
 };
 
+/**
+ * Read JSON file synchronously.
+ * @param String - file name.
+ * @returns Object - JSON.
+ */
+
 const readJSONFile = function readJSONFile(fileName) {
     return JSON.parse(readFile(fileName));
 };
+
+/**
+ * Gets fixtures & mocks for a given test case.
+ * @param String - test case name.
+ * @returns Object - fixtures.
+ */
 
 const getFixtures = function getFixtures(testName) {
     return {
@@ -42,59 +61,49 @@ const getFixtures = function getFixtures(testName) {
     };
 };
 
+/**
+ * Sets up stubs for all API calls that use the crawl library.
+ * @param String - test case name.
+ * @returns null
+ */
+
 const setStubs = function setStubs(testName) {
-    if (testName) {
+    if (useStubs) {
         const fixtures = getFixtures(testName);
-        // Stub the 'getPage()' method.
-        // Return a fixture from `test/mocks` instead.
-        const mockPageResponse = function mockPageResponse() {
+
+        // Read HTML from fixture file, and not an external HTTP(S) resource.
+        const dummyGetPage = function dummyGetPage(options) {
             return Promise.resolve(fixtures['html']);
         };
-        td.when(getPage(td.matchers.anything())).thenReturn(mockPageResponse());
-        
-        const dummyResponse2 = function dummyResponse2() {
-            return Promise.resolve({'sample': ['BOOM', 'SHAKA', 'LAKA']});
-        };
-        td.when(crawl(td.matchers.anything(), td.matchers.anything())).thenReturn(dummyResponse2());
-        
-    }
-    app = require('../app.js');
-};
 
-const stopApp = function(app) {
-    app.close();
-};
-
-/**
- * Setup.
- */
-
-const libCrawl = td.replace('../lib/crawl');
-const getPage = libCrawl.getPage;
-const crawl = libCrawl.crawl;
-const requestOptions = {
-    url: 'https://reddit.com/',
-    transform: (body) => {
-        return libCrawl.load(body);
+        // Get crawl function to use the dummyGetPage stub.
+        const dummyCrawl = function dummyCrawl(url, data) {
+            return dummyGetPage(url).then((html) => {
+                const $ = libCrawl.load(html);
+                return libCrawl.getElements($, data);
+            });
+        }
+        td.replace(libCrawl, 'getPage', dummyGetPage);
+        td.replace(libCrawl, 'crawl', dummyCrawl);
+        app = require('../app');
     }
 };
 
 /**
- * Library Tests.
+ * Removes all stubs/mocks.
+ * @returns null
  */
 
-/*test('LIB ➡️ getPage()', (assert) => {
-    getPage(requestOptions).then((response) => {
-        console.log('ALL OK');
-        assert.end();
-    });
-});*/
+const removeStubs = function removeStubs() {
+    td.reset();
+    app = require('../app');
+};
 
 /**
  * API Tests.
  */
 
-test('API ➡️ GET /ping', (assert) => {
+test('API ➡️  GET /ping', (assert) => {
     assert.plan(2);
     const expectedResult = 'pong';
     request(app)
@@ -103,13 +112,13 @@ test('API ➡️ GET /ping', (assert) => {
         .expect('Content-Type', /text/)
         .end(function (err, res) {
             const actualResult = res.text;
-            assert.error(err, 'No Errors');
-            assert.same(actualResult, expectedResult, 'Ping Response');
+            assert.error(err, '✅  No Errors');
+            assert.same(actualResult, expectedResult, '✅  Ping Response');
             assert.end();
         });
 });
 
-test('API ➡️ GET /<random>', (assert) => {
+test('API ➡️  GET /<random>', (assert) => {
     assert.plan(1);
     const expectedResult = {
         'error': 'Not Found'
@@ -120,33 +129,51 @@ test('API ➡️ GET /<random>', (assert) => {
         .expect('Content-Type', /application\/json; charset=utf-8/)
         .end(function (err, res) {
             const actualResult = res.body;
-            assert.same(actualResult, expectedResult, 'Not Found Response');
+            assert.same(actualResult, expectedResult, '✅  404 Not Found Response');
             assert.end();
         });
 });
 
-test('API ➡️ POST /data', (assert) => {
+test('API ➡️  POST /data (Correct Data)', (assert) => {
     const testName = 'reddit_1';
     const testData = getFixtures(testName);
-    stopApp(app);
     setStubs(testName);
     assert.plan(2);
     request(app)
         .post('/api/data')
-        .send(testData['INPUT'])
+        .send(testData['json']['INPUT'])
         .expect(200)
         .expect('Content-Type', /application\/json; charset=utf-8/)
         .end(function (err, res) {
-            assert.error(err, 'No Errors');
-            const expectedResult = testData['OUTPUT'];
+            assert.error(err, '✅  No Errors');
+            const expectedResult = testData['json']['OUTPUT'];
             const actualResult = res.body;
-            assert.same(actualResult, expectedResult, 'Crawl Response');
+            assert.same(actualResult, expectedResult, '✅  Crawl Response');
             assert.end();
-    });
+        });
+});
+
+test('API ➡️  POST /data (Missing Data)', (assert) => {
+    const testName = 'github_1';
+    const testData = getFixtures(testName);
+    setStubs(testName);
+    assert.plan(2);
+    request(app)
+        .post('/api/data')
+        .send(testData['json']['INPUT'])
+        .expect(200)
+        .expect('Content-Type', /application\/json; charset=utf-8/)
+        .end(function (err, res) {
+            assert.error(err, '✅  No Errors');
+            const expectedResult = testData['json']['OUTPUT'];
+            const actualResult = res.body;
+            assert.same(actualResult, expectedResult, '✅  Crawl Response');
+            assert.end();
+        });
 });
 
 test('⏹ TEARDOWN', (test) => {
-  td.reset();
-  app.close();
-  test.end();
+    td.reset();
+    app.close();
+    test.end();
 });
