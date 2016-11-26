@@ -3,10 +3,3 @@ node_js:
   - "stable"
 env:
   - NODE_ENV=test
-deploy:
-  provider: codedeploy
-  access_key_id: "AKIAIPP4MEWPQS2GKY6A"
-  secret_access_key: "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"
-  application: "ScrappyDoo"
-  deployment-group: "scrappydoo-group"
-  instance-group: "scrappydoo-group"
