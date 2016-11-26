@@ -1,0 +1,21 @@
+{
+    "INPUT": {
+        "url": "https://github.com/paambaati",
+        "data": [
+            {
+                "attribute": "src",
+                "name": "user_avatar",
+                "selector": "html>body>div:eq(3)>div:eq(0)>div>div:eq(0)>a>img"
+            },
+            {
+                "name": "user_website",
+                "selector": "html>body>div:eq(3)>div:eq(0)>div>div:eq(0)>ul>li:eq(10000)>a",
+                "attribute": "href"
+            }
+        ]
+    },
+    "OUTPUT": {
+        "user_avatar": "https://avatars0.githubusercontent.com/u/5381764?v=3&s=460",
+        "user_website": null
+    }
+}
