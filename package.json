@@ -2,7 +2,6 @@
   "name": "ScrappyDoo-Node",
   "description": "Moderately Cool WebPage Crawler",
   "version": "0.0.2",
-  "private": true,
   "author": {
     "name": "GP",
     "email": "gprasannah@gmail.com"
