@@ -2,7 +2,7 @@
 
 Companion crawl server for the [ScrappyDoo Chrome Extension](https://chrome.google.com/webstore/detail/scrappydoo/feemfkpfgknekffbnmlhopldhbjgficp?hl=en-US&gl=IN). Given a URL and a set of CSS selectors, the server goes through the markup, parses for and returns the values found at those selectors.
 
-![build](https://travis-ci.org/paambaati/scrappydoo-node.svg?branch=master)
+[![build](https://travis-ci.org/paambaati/scrappydoo-node.svg?branch=master)](https://travis-ci.org/paambaati/scrappydoo-node)
 
 ## Dependencies
 
